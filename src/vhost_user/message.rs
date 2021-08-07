@@ -9,6 +9,7 @@
 #![allow(non_camel_case_types)]
 #![allow(clippy::upper_case_acronyms)]
 
+use std::convert::{TryFrom, TryInto};
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
@@ -41,7 +42,7 @@ pub const VHOST_USER_CONFIG_SIZE: u32 = 0x1000;
 pub const VHOST_USER_MAX_VRINGS: u64 = 0x8000u64;
 
 pub(super) trait Req:
-    Clone + Copy + Debug + PartialEq + Eq + PartialOrd + Ord + Into<u32>
+    Clone + Copy + Debug + PartialEq + Eq + PartialOrd + Ord + Into<u32> + TryFrom<u32>
 {
     fn is_valid(&self) -> bool;
 }
@@ -144,6 +145,57 @@ pub enum MasterReq {
 impl From<MasterReq> for u32 {
     fn from(req: MasterReq) -> u32 {
         req as u32
+    }
+}
+
+impl TryFrom<u32> for MasterReq {
+    type Error = TryFromIntError;
+    fn try_from(n: u32) -> Result<Self, Self::Error> {
+        match n {
+            0 => Ok(NOOP),
+            1 => Ok(GET_FEATURES),
+            2 => Ok(SET_FEATURES),
+            3 => Ok(SET_OWNER),
+            4 => Ok(RESET_OWNER),
+            5 => Ok(SET_MEM_TABLE),
+            6 => Ok(SET_LOG_BASE),
+            7 => Ok(SET_LOG_FD),
+            8 => Ok(SET_VRING_NUM),
+            9 => Ok(SET_VRING_ADDR),
+            10 => Ok(SET_VRING_BASE),
+            11 => Ok(GET_VRING_BASE),
+            12 => Ok(SET_VRING_KICK),
+            13 => Ok(SET_VRING_CALL),
+            14 => Ok(SET_VRING_ERR),
+            15 => Ok(GET_PROTOCOL_FEATURES),
+            16 => Ok(SET_PROTOCOL_FEATURES),
+            17 => Ok(GET_QUEUE_NUM),
+            18 => Ok(SET_VRING_ENABLE),
+            19 => Ok(SEND_RARP),
+            20 => Ok(NET_SET_MTU),
+            21 => Ok(SET_SLAVE_REQ_FD),
+            22 => Ok(IOTLB_MSG),
+            23 => Ok(SET_VRING_ENDIAN),
+            24 => Ok(GET_CONFIG),
+            25 => Ok(SET_CONFIG),
+            26 => Ok(CREATE_CRYPTO_SESSION),
+            27 => Ok(CLOSE_CRYPTO_SESSION),
+            28 => Ok(POSTCOPY_ADVISE),
+            29 => Ok(POSTCOPY_LISTEN),
+            30 => Ok(POSTCOPY_END),
+            31 => Ok(GET_INFLIGHT_FD),
+            32 => Ok(SET_INFLIGHT_FD),
+            33 => Ok(GPU_SET_SOCKET),
+            34 => Ok(RESET_DEVICE),
+            35 => Ok(VRING_KICK),
+            36 => Ok(GET_MAX_MEM_SLOTS),
+            37 => Ok(ADD_MEM_REG),
+            38 => Ok(REM_MEM_REG),
+            39 => Ok(SET_STATUS),
+            40 => Ok(GET_STATUS),
+            41 => Ok(MAX_CMD),
+            _ => Err(TryFromIntError),
+        }
     }
 }
 
@@ -268,9 +320,8 @@ impl<R: Req> VhostUserMsgHeader<R> {
     }
 
     /// Get message type.
-    pub fn get_code(&self) -> R {
-        // It's safe because R is marked as repr(u32).
-        unsafe { std::mem::transmute_copy::<u32, R>(&{ self.request }) }
+    pub fn get_code(&self) -> Option<R> {
+        self.request.try_into().ok()
     }
 
     /// Set message type.

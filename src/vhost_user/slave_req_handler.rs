@@ -8,6 +8,8 @@ use std::os::unix::net::UnixStream;
 use std::slice;
 use std::sync::{Arc, Mutex};
 
+use log::debug;
+
 use super::connection::Endpoint;
 use super::message::*;
 use super::slave_fs_cache::SlaveFsCacheReq;
@@ -321,6 +323,7 @@ impl<S: VhostUserSlaveReqHandler> SlaveReqHandler<S> {
             }
         };
 
+        debug!("<- {:?}", hdr);
         match hdr.get_code() {
             MasterReq::SET_OWNER => {
                 self.check_request_size(&hdr, size, 0)?;
@@ -528,9 +531,9 @@ impl<S: VhostUserSlaveReqHandler> SlaveReqHandler<S> {
                 let res = self.backend.remove_mem_region(&msg);
                 self.send_ack_message(&hdr, res)?;
             }
-            _ => {
-                return Err(Error::InvalidMessage);
-            }
+            // _ => {
+            //     return Err(Error::InvalidMessage);
+            // }
         }
         Ok(())
     }

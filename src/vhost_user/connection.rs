@@ -14,6 +14,7 @@ use std::path::{Path, PathBuf};
 use std::{mem, slice};
 
 use libc::{c_void, iovec};
+use log::debug;
 use vmm_sys_util::sock_ctrl_msg::ScmSocket;
 
 use super::message::*;
@@ -221,6 +222,7 @@ impl<R: Req> Endpoint<R> {
         if mem::size_of::<T>() > MAX_MSG_SIZE {
             return Err(Error::OversizedMsg);
         }
+        debug!("-> {:?}", hdr);
         // Safe because there can't be other mutable referance to hdr and body.
         let iovs = unsafe {
             [

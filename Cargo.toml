@@ -16,11 +16,12 @@ vhost-vsock = []
 vhost-kern = ["vm-memory"]
 vhost-user = []
 vhost-user-master = ["vhost-user"]
-vhost-user-slave = ["vhost-user"]
+vhost-user-slave = ["log", "vhost-user"]
 
 [dependencies]
 bitflags = ">=1.0.1"
 libc = ">=0.2.39"
+log = { version = "0.4.14", optional = true }
 
 vmm-sys-util = ">=0.3.1"
 vm-memory = { version = "0.6", optional = true }
